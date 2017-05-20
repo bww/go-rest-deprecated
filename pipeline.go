@@ -9,7 +9,7 @@ import (
 )
 
 import (
-  "bitbucket.org/madebymess/go-util"
+  "github.com/bww/go-util/uuid"
 )
 
 /**
@@ -64,7 +64,7 @@ func newRequest(r *http.Request) *Request {
  * Create a service request
  */
 func newRequestWithAttributes(r *http.Request, a Attrs) *Request {
-  id := util.TimeUUID()
+  id := uuid.TimeUUID()
   return &Request{r, base64.RawURLEncoding.EncodeToString(id[:]), a, 0, time.Now()}
 }
 
