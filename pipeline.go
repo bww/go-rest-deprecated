@@ -5,7 +5,6 @@ import (
   "time"
   "strings"
   "net/http"
-  "encoding/base64"
 )
 
 import (
@@ -64,8 +63,7 @@ func newRequest(r *http.Request) *Request {
  * Create a service request
  */
 func newRequestWithAttributes(r *http.Request, a Attrs) *Request {
-  id := uuid.TimeUUID()
-  return &Request{r, base64.RawURLEncoding.EncodeToString(id[:]), a, 0, time.Now()}
+  return &Request{r, uuid.Time().String(), a, 0, time.Now()}
 }
 
 /**
