@@ -69,9 +69,24 @@ func NewService(c Config) *Service {
   }
   
   if c.TraceRegexps != nil {
-    s.traceRequests = make(map[string]*regexp.Regexp)
+    if s.traceRequests == nil {
+      s.traceRequests = make(map[string]*regexp.Regexp)
+    }
     for _, e := range c.TraceRegexps {
       s.traceRequests[e.String()] = e
+    }
+  }
+  if t := os.Getenv("GOREST_TRACE"); t != "" {
+    if s.traceRequests == nil {
+      s.traceRequests = make(map[string]*regexp.Regexp)
+    }
+    for _, e := range strings.Split(t, ";") {
+      s.traceRequests[e] = regexp.MustCompile(e)
+    }
+  }
+  if s.debug {
+    for k, _ := range s.traceRequests {
+      fmt.Println("rest: trace:", k)
     }
   }
   
