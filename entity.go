@@ -9,11 +9,67 @@ import (
 )
 
 /**
+ * A response
+ */
+type Response struct {
+  StatusCode  int
+  Headers     map[string]string
+  Entity      interface{}
+}
+
+/**
+ * Create an entity context wrapper
+ */
+func NewResponse(r int, h map[string]string, e interface{}) *Response {
+  return &Response{r, h, e}
+}
+
+/**
+ * Create a redirect response
+ */
+func NewRedirect(loc string) *Response {
+  return &Response{http.StatusFound, map[string]string{"Location": loc}, nil}
+}
+
+/**
+ * Set a header value
+ */
+func (r *Response) Header(k, v string) *Response {
+  if r.Headers == nil {
+    r.Headers = make(map[string]string)
+  }
+  r.Headers[k] = v
+  return r
+}
+
+/**
  * An entity
  */
 type Entity interface {
   io.Reader
   ContentType()(string)
+}
+
+/**
+ * An entity that wraps a reader
+ */
+type readerEntity struct {
+  io.Reader
+  contentType string
+}
+
+/**
+ * Create a reader entity
+ */
+func NewReaderEntity(t string, r io.Reader) Entity {
+  return &readerEntity{r, t}
+}
+
+/**
+ * Content type
+ */
+func (e readerEntity) ContentType() string {
+  return e.contentType
 }
 
 /**
