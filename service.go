@@ -84,6 +84,11 @@ func NewService(c Config) *Service {
       s.traceRequests[e] = regexp.MustCompile(e)
     }
   }
+  if s.debug {
+    for k, _ := range s.traceRequests {
+      fmt.Println("rest: trace:", k)
+    }
+  }
   
   return s
 }
@@ -179,10 +184,31 @@ func (s *Service) routeRequest(rsp http.ResponseWriter, req *Request, pln Pipeli
 func (s *Service) sendResponse(rsp http.ResponseWriter, req *Request, res interface{}, err error) {
   rsp.Header().Set("X-Request-Id", req.Id)
   if err == nil {
-    s.sendEntity(rsp, req, http.StatusOK, nil, res)
+    s.sendSuccess(rsp, req, res)
   }else{
     s.sendError(rsp, req, err)
   }
+}
+
+/**
+ * Send success
+ */
+func (s *Service) sendSuccess(rsp http.ResponseWriter, req *Request, res interface{}) {
+  var r int
+  var e interface{}
+  var h map[string]string
+  
+  switch v := res.(type) {
+    case *Response:
+      r = v.StatusCode
+      e = v.Entity
+      h = v.Headers
+    default:
+      r = http.StatusOK
+      e = res
+  }
+  
+  s.sendEntity(rsp, req, r, h, e)
 }
 
 /**
