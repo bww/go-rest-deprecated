@@ -44,3 +44,22 @@ func UnmarshalRequestEntity(req *rest.Request, entity interface{}) error {
   
   return nil
 }
+
+/**
+ * Returns a copy of the provided *http.Request. The clone is a shallow
+ * copy of the struct and its Header map.
+ */
+func CopyRequest(r *http.Request) *http.Request {
+  
+  // shallow copy of the struct
+  d := new(http.Request)
+  *d = *r
+  
+  // deep copy of the Header
+  d.Header = make(http.Header)
+  for k, s := range r.Header {
+    d.Header[k] = s
+  }
+  
+  return d
+}
