@@ -43,6 +43,7 @@ type Service struct {
   traceRequests map[string]*regexp.Regexp
   entityHandler EntityHandler
   debug         bool
+  suppress      map[string]struct{}
 }
 
 /**
@@ -88,6 +89,17 @@ func NewService(c Config) *Service {
     for k, _ := range s.traceRequests {
       fmt.Println("rest: trace:", k)
     }
+  }
+  
+  s.suppress = make(map[string]struct{})
+  if v := os.Getenv("GOREST_TRACE_SUPPRESS_HEADERS"); v != "" {
+    if !strings.EqualFold(v, "none") {
+      for _, e := range strings.Split(v, ",") {
+        s.suppress[strings.ToLower(e)] = struct{}{}
+      }
+    }
+  }else{
+    s.suppress["authorization"] = struct{}{}
   }
   
   return s

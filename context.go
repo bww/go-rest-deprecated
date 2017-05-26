@@ -89,7 +89,7 @@ func (c *Context) handle(rsp http.ResponseWriter, req *Request, h Handler) {
         
         if req.Header != nil {
           for k, v := range req.Header {
-            if strings.EqualFold(k, "Authorization") {
+            if _, ok := c.service.suppress[strings.ToLower(k)]; ok {
               alt.Debugf("  < %v: <%v suppressed>", k, len(v))
             }else{
               alt.Debugf("  < %v: %v", k, v)
