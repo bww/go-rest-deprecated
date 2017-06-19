@@ -248,7 +248,7 @@ func (s *Service) sendError(rsp http.ResponseWriter, req *Request, err error) {
   if r < 200 || r >= 500 {
     alt.Error(m, nil, nil)
   }else{
-    alt.Debug(m, nil, nil)
+    alt.Debug(m)
   }
   if req.Accepts("text/html") {
     s.sendEntity(rsp, req, r, h, htmlError(r, h, c))
