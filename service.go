@@ -244,9 +244,11 @@ func (s *Service) sendError(rsp http.ResponseWriter, req *Request, err error) {
       m = fmt.Sprintf("%s: [%v] %v", s.name, req.Id, err)
   }
   
-  // log non-success, non-client errors
-  if s.debug || r < 200 || r >= 500 {
+  // propagate non-success, non-client errors; just log others
+  if r < 200 || r >= 500 {
     alt.Error(m, nil, nil)
+  }else{
+    alt.Debug(m, nil, nil)
   }
   if req.Accepts("text/html") {
     s.sendEntity(rsp, req, r, h, htmlError(r, h, c))
