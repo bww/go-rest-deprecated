@@ -13,6 +13,7 @@ import (
 import (
   "github.com/gorilla/mux"
   "github.com/bww/go-alert"
+  "github.com/bww/go-util/debug"
 )
 
 /**
@@ -233,7 +234,7 @@ func (s *Service) sendError(rsp http.ResponseWriter, req *Request, err error) {
   }
   
   // log non-success, non-client errors
-  if r < 200 || r >= 500 {
+  if debug.VERBOSE || r < 200 || r >= 500 {
     alt.Error(m, nil, nil)
   }
   if req.Accepts("text/html") {
