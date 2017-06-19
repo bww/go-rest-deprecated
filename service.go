@@ -215,6 +215,7 @@ func (s *Service) sendSuccess(rsp http.ResponseWriter, req *Request, res interfa
  * Respond with an error
  */
 func (s *Service) sendError(rsp http.ResponseWriter, req *Request, err error) {
+  var m string
   var r int
   var c error
   var h map[string]string
@@ -224,13 +225,17 @@ func (s *Service) sendError(rsp http.ResponseWriter, req *Request, err error) {
       r = cerr.Status
       h = cerr.Headers
       c = cerr.Cause
-      alt.Errorf("%s: [%v] %v", s.name, req.Id, cerr.Cause)
+      m = fmt.Sprintf("%s: [%v] %v", s.name, req.Id, cerr.Cause)
     default:
       r = http.StatusInternalServerError
       c = basicError{http.StatusInternalServerError, err.Error()}
-      alt.Errorf("%s: [%v] %v", s.name, req.Id, err)
+      m = fmt.Sprintf("%s: [%v] %v", s.name, req.Id, err)
   }
   
+  // log non-success, non-client errors
+  if r < 200 || r >= 500 {
+    alt.Error(m, nil, nil)
+  }
   if req.Accepts("text/html") {
     s.sendEntity(rsp, req, r, h, htmlError(r, h, c))
   }else{
