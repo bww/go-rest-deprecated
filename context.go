@@ -13,6 +13,7 @@ import (
 import (
   "github.com/gorilla/mux"
   "github.com/bww/go-alert"
+  "github.com/bww/go-util/text"
 )
 
 /**
@@ -86,13 +87,14 @@ func (c *Context) handle(rsp http.ResponseWriter, req *Request, h Handler) {
     for _, e := range c.service.traceRequests {
       if e.MatchString(req.URL.Path) {
         alt.Debugf("%s: [%s] (trace:%v) %s %s ", c.service.name, req.RemoteAddr, e, req.Method, where)
+        var reqdata string
         
         if req.Header != nil {
           for k, v := range req.Header {
-            if strings.EqualFold(k, "Authorization") {
-              alt.Debugf("  < %v: <%v suppressed>", k, len(v))
+            if _, ok := c.service.suppress[strings.ToLower(k)]; ok {
+              reqdata += fmt.Sprintf("%v: <%v suppressed>\n", k, len(v))
             }else{
-              alt.Debugf("  < %v: %v", k, v)
+              reqdata += fmt.Sprintf("%v: %v\n", k, v)
             }
           }
         }
@@ -103,14 +105,15 @@ func (c *Context) handle(rsp http.ResponseWriter, req *Request, h Handler) {
             c.service.sendResponse(rsp, req, nil, NewError(http.StatusInternalServerError, err))
             return 
           }
-          alt.Debugf("  <")
+          reqdata += "\n"
           if data != nil && len(data) > 0 {
-            alt.Debugf("  < %s", string(data))
+            reqdata += string(data) +"\n"
           }
           req.Body = ioutil.NopCloser(bytes.NewBuffer(data))
         }
         
-        alt.Debugf("  -")
+        fmt.Println(text.Indent(reqdata, "> "))
+        fmt.Println("-")
         trace = true
         break
       }
@@ -125,20 +128,22 @@ func (c *Context) handle(rsp http.ResponseWriter, req *Request, h Handler) {
     if trace { // check for a trace and output the response
       recorder := httptest.NewRecorder()
       c.service.sendResponse(recorder, req, res, err)
+      var rspdata string
       
-      alt.Debugf("  > %v %s", recorder.Code, http.StatusText(recorder.Code))
+      rspdata += fmt.Sprintf("HTTP/1.1 %v %v %s\n", recorder.Code, http.StatusText(recorder.Code), http.StatusText(recorder.Code))
       if recorder.HeaderMap != nil {
         for k, v := range recorder.HeaderMap {
-          alt.Debugf("  > %v: %v", k, v)
+          rspdata += fmt.Sprintf("%v: %v\n", k, v)
         }
       }
       
-      alt.Debugf("  >")
+      rspdata += "\n"
       if b := recorder.Body; b != nil {
-        alt.Debugf("  > %v", string(b.Bytes()))
+        rspdata += string(b.Bytes()) +"\n"
       }
       
-      alt.Debugf("  #")
+      fmt.Println(text.Indent(rspdata, "< "))
+      fmt.Println("#")
     }
   }
   
