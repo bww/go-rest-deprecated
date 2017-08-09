@@ -107,14 +107,14 @@ func DefaultEntityHandler(rsp http.ResponseWriter, req *Request, status int, con
     
     case nil:
       rsp.WriteHeader(status)
-    
+      
     case Entity:
       rsp.Header().Add("Content-Type", e.ContentType())
       rsp.WriteHeader(status)
       
       n, err := io.Copy(rsp, e)
       if err != nil {
-        return fmt.Errorf("Could not write entity: %v\nIn response to: %v %v\nEntity: %d bytes written", err, req.Method, req.URL, n)
+        return fmt.Errorf("Could not write entity: %v\n> In response to: %v %v\nEntity: %d bytes written", err, req.Method, req.URL, n)
       }
       
     case json.RawMessage:
@@ -123,21 +123,22 @@ func DefaultEntityHandler(rsp http.ResponseWriter, req *Request, status int, con
       
       _, err := rsp.Write([]byte(e))
       if err != nil {
-        return fmt.Errorf("Could not write entity: %v\nIn response to: %v %v\nEntity: %d bytes", err, req.Method, req.URL, len(e))
+        return fmt.Errorf("Could not write entity: %v\n> In response to: %v %v\nEntity: %d bytes", err, req.Method, req.URL, len(e))
       }
       
     default:
+      data, err := json.Marshal(content)
+      if err != nil {
+        rsp.WriteHeader(http.StatusInternalServerError) // don't return OK
+        return fmt.Errorf("Could not marshal entity: %v\n> In response to: %v %v", err, req.Method, req.URL)
+      }
+      
       rsp.Header().Add("Content-Type", "application/json")
       rsp.WriteHeader(status)
       
-      data, err := json.Marshal(content)
-      if err != nil {
-        return fmt.Errorf("Could not marshal entity: %v\nIn response to: %v %v", err, req.Method, req.URL)
-      }
-      
       _, err = rsp.Write(data)
       if err != nil {
-        return fmt.Errorf("Could not write entity: %v\nIn response to: %v %v\nEntity: %d bytes", err, req.Method, req.URL, len(data))
+        return fmt.Errorf("Could not write entity: %v\n> In response to: %v %v\nEntity: %d bytes", err, req.Method, req.URL, len(data))
       }
       
   }
