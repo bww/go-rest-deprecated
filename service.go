@@ -15,6 +15,12 @@ import (
   "github.com/bww/go-alert"
 )
 
+// Internal service options
+type serviceOptions uint32
+const (
+  serviceOptionNone = serviceOptions(0)
+)
+
 /**
  * Service config
  */
@@ -43,6 +49,7 @@ type Service struct {
   traceRequests map[string]*regexp.Regexp
   entityHandler EntityHandler
   debug         bool
+  options       serviceOptions
   suppress      map[string]struct{}
 }
 
@@ -232,12 +239,12 @@ func (s *Service) sendError(rsp http.ResponseWriter, req *Request, err error) {
   var c error
   var h map[string]string
   
-  switch cerr := err.(type) {
+  switch v := err.(type) {
     case *Error:
-      r = cerr.Status
-      h = cerr.Headers
-      c = cerr.Cause
-      m = fmt.Sprintf("%s: [%v] %v", s.name, req.Id, cerr.Cause)
+      r = v.Status
+      h = v.Headers
+      c = v.Cause
+      m = fmt.Sprintf("%s: [%v] %v", s.name, req.Id, v.Cause)
     default:
       r = http.StatusInternalServerError
       c = basicError{http.StatusInternalServerError, err.Error()}
