@@ -29,6 +29,9 @@ type Config struct {
   Instance      string
   Hostname      string
   UserAgent     string
+  ReadTimeout   time.Duration
+  WriteTimeout  time.Duration
+  IdleTimeout   time.Duration
   Endpoint      string
   TraceRegexps  []*regexp.Regexp
   EntityHandler EntityHandler
@@ -50,6 +53,9 @@ type Service struct {
   entityHandler EntityHandler
   debug         bool
   options       serviceOptions
+  readTimeout   time.Duration
+  writeTimeout  time.Duration
+  idleTimeout   time.Duration
   suppress      map[string]struct{}
 }
 
@@ -65,6 +71,9 @@ func NewService(c Config) *Service {
   s.port = c.Endpoint
   s.router = mux.NewRouter()
   s.entityHandler = c.EntityHandler
+  s.readTimeout = c.ReadTimeout
+  s.writeTimeout = c.WriteTimeout
+  s.idleTimeout = c.IdleTimeout
   
   if c.Name == "" {
     s.name = "service"
@@ -153,8 +162,9 @@ func (s *Service) Run() error {
   server := &http.Server{
     Addr: s.port,
     Handler: s,
-    ReadTimeout: 30 * time.Second,
-    WriteTimeout: 30 * time.Second,
+    ReadTimeout: s.readTimeout,
+    WriteTimeout: s.writeTimeout,
+    IdleTimeout: s.idleTimeout,
   }
   
   alt.Debugf("%s: Listening on %v", s.name, s.port)
