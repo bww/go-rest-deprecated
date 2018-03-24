@@ -9,6 +9,7 @@ import (
 
 import (
   "github.com/bww/go-util/uuid"
+  "github.com/bww/go-rest/trace"
 )
 
 /**
@@ -46,10 +47,11 @@ const (
  */
 type Request struct {
   *http.Request
-  Id    string
-  Attrs Attrs
-  flags requestFlags
-  start time.Time
+  Id      string
+  Attrs   Attrs
+  Traces  []trace.Trace
+  flags   requestFlags
+  start   time.Time
 }
 
 /**
@@ -63,7 +65,7 @@ func newRequest(r *http.Request) *Request {
  * Create a service request
  */
 func newRequestWithAttributes(r *http.Request, a Attrs) *Request {
-  return &Request{r, uuid.Time().String(), a, 0, time.Now()}
+  return &Request{r, uuid.Time().String(), a, nil, 0, time.Now()}
 }
 
 /**
@@ -91,6 +93,13 @@ func (r *Request) Finalize() {
  */
 func (r *Request) Started() time.Time {
   return r.start
+}
+
+/**
+ * Add a trace
+ */
+func (r *Request) Trace(t trace.Trace) {
+  r.Traces = append(r.Traces, t)
 }
 
 /**
