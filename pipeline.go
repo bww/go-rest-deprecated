@@ -8,8 +8,9 @@ import (
 )
 
 import (
-  "github.com/bww/go-util/uuid"
-  "github.com/bww/go-rest/trace"
+  ntrace  "golang.org/x/net/trace"
+          "github.com/bww/go-util/uuid"
+          "github.com/bww/go-rest/trace"
 )
 
 /**
@@ -49,6 +50,7 @@ type Request struct {
   *http.Request
   Id      string
   Attrs   Attrs
+  Tracer  ntrace.Trace
   Traces  []trace.Trace
   flags   requestFlags
   start   time.Time
@@ -65,7 +67,7 @@ func newRequest(r *http.Request) *Request {
  * Create a service request
  */
 func newRequestWithAttributes(r *http.Request, a Attrs) *Request {
-  return &Request{r, uuid.Time().String(), a, nil, 0, time.Now()}
+  return &Request{r, uuid.Time().String(), a, nil, nil, 0, time.Now()}
 }
 
 /**
@@ -100,6 +102,14 @@ func (r *Request) Started() time.Time {
  */
 func (r *Request) Trace(t trace.Trace) {
   r.Traces = append(r.Traces, t)
+  if tr := r.Tracer; tr != nil {
+    if err := t.Error(); err == nil {
+      tr.LazyPrintf("%s", t.Message())
+    }else{
+      tr.LazyPrintf("[ERR] %v", err)
+      tr.SetError()
+    }
+  }
 }
 
 /**
