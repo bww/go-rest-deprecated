@@ -8,7 +8,7 @@ import (
 )
 
 import (
-  ntrace  "golang.org/x/net/trace"
+  xtrace  "golang.org/x/net/trace"
           "github.com/bww/go-util/uuid"
           "github.com/bww/go-rest/trace"
 )
@@ -50,7 +50,7 @@ type Request struct {
   *http.Request
   Id      string
   Attrs   Attrs
-  Tracer  ntrace.Trace
+  Tracer  xtrace.Trace
   Traces  []trace.Trace
   flags   requestFlags
   start   time.Time
