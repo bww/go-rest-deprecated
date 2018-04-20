@@ -129,6 +129,13 @@ func (s *Service) Context() *Context {
 }
 
 /**
+ * Obtain the root router, if you must.
+ */
+func (s *Service) Router() *mux.Router {
+  return s.router
+}
+
+/**
  * Create a subrouter that can be configured for specialized use
  */
 func (s *Service) Subrouter(p string) *mux.Router {
