@@ -167,7 +167,7 @@ func (p Pipeline) Add(h Handler) Pipeline {
  * Continue processing the pipeline
  */
 func (p Pipeline) Next(w http.ResponseWriter, r *Request) (interface{}, error) {
-  if len(p) < 0 {
+  if len(p) < 1 {
     return nil, nil // empty pipline
   }else{
     return p[0].ServeRequest(w, r, p[1:])
