@@ -8,6 +8,7 @@ import (
 
 import (
   "github.com/bww/go-rest"
+  "github.com/gorilla/schema"
 )
 
 /**
@@ -31,17 +32,28 @@ func RequestEntity(req *rest.Request) ([]byte, error) {
  * Unmarshal a request entity. The entity is assumed to be JSON.
  */
 func UnmarshalRequestEntity(req *rest.Request, entity interface{}) error {
-  
-  data, err := RequestEntity(req)
-  if err != nil {
-    return err
+  switch strings.ToLower(req.Header.Get("Content-Type")) {
+    case "application/x-www-form-urlencoded", "multipart/form-data":
+      form, err := req.ParseForm()
+      if err != nil {
+        return rest.NewErrorf(http.StatusBadRequest, "Could not parse form: %v", err)
+      }
+      err = schema.NewDecoder().Decode(entity, form)
+      if err != nil {
+        return rest.NewErrorf(http.StatusBadRequest, "Could not unmarshal request entity: %v", err)
+      }
+      
+    case "application/json": fallthrough
+    default:
+      data, err := RequestEntity(req)
+      if err != nil {
+        return err
+      }
+      err = json.Unmarshal(data, entity)
+      if err != nil {
+        return rest.NewErrorf(http.StatusBadRequest, "Could not unmarshal request entity: %v", err)
+      }
   }
-  
-  err = json.Unmarshal(data, entity)
-  if err != nil {
-    return rest.NewErrorf(http.StatusBadRequest, "Could not unmarshal request entity: %v", err)
-  }
-  
   return nil
 }
 
