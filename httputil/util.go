@@ -1,8 +1,9 @@
 package httputil
 
 import (
-  "io/ioutil"
+  "strings"
   "net/http"
+  "io/ioutil"
   "encoding/json"
 )
 
@@ -11,9 +12,12 @@ import (
   "github.com/gorilla/schema"
 )
 
-/**
- * Read and return the request entity
- */
+var formDecoder *schema.Decoder
+func init() {
+  formDecoder = schema.NewDecoder()
+  formDecoder.IgnoreUnknownKeys(true)
+}
+
 func RequestEntity(req *rest.Request) ([]byte, error) {
   
   if req.Body == nil {
@@ -28,17 +32,14 @@ func RequestEntity(req *rest.Request) ([]byte, error) {
   return data, nil
 }
 
-/**
- * Unmarshal a request entity. The entity is assumed to be JSON.
- */
 func UnmarshalRequestEntity(req *rest.Request, entity interface{}) error {
   switch strings.ToLower(req.Header.Get("Content-Type")) {
     case "application/x-www-form-urlencoded", "multipart/form-data":
-      form, err := req.ParseForm()
+      err := req.ParseForm()
       if err != nil {
         return rest.NewErrorf(http.StatusBadRequest, "Could not parse form: %v", err)
       }
-      err = schema.NewDecoder().Decode(entity, form)
+      err = formDecoder.Decode(entity, req.PostForm)
       if err != nil {
         return rest.NewErrorf(http.StatusBadRequest, "Could not unmarshal request entity: %v", err)
       }
@@ -57,10 +58,6 @@ func UnmarshalRequestEntity(req *rest.Request, entity interface{}) error {
   return nil
 }
 
-/**
- * Returns a copy of the provided *http.Request. The clone is a shallow
- * copy of the struct and its Header map.
- */
 func CopyRequest(r *http.Request) *http.Request {
   
   // shallow copy of the struct

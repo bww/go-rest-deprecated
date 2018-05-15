@@ -70,3 +70,14 @@ type basicError struct {
 func (e basicError) Error() string {
   return e.Message
 }
+
+// An error that has supplemental details
+type ErrorDetail interface {
+  ErrorDetail()(interface{})
+}
+
+// An error that represents a field
+type FieldError interface {
+  ErrorField()(string)
+  ErrorMessage()(string)
+}

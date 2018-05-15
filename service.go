@@ -6,11 +6,13 @@ import (
   "fmt"
   "time"
   "regexp"
+  "reflect"
   "strings"
   "net/http"
 )
 
 import (
+  "golang.org/x/net/html"
   "github.com/gorilla/mux"
   "github.com/bww/go-alert"
 )
@@ -313,14 +315,48 @@ func (s *Service) sendEntity(rsp http.ResponseWriter, req *Request, status int, 
  */
 func htmlError(status int, headers map[string]string, content error) Entity {
   
-  e := content.Error()
-  e  = strings.Replace(e, "&", "&amp;", -1)
-  e  = strings.Replace(e, "<", "&lt;", -1)
-  e  = strings.Replace(e, ">", "&gt;", -1)
+  e := html.EscapeString(content.Error())
   
   m := `<html><body>`
   m += `<h1>`+ fmt.Sprintf("%v %v", status, http.StatusText(status)) +`</h1>`
-  m += `<p><pre>`+ e +`</pre></p>`
+  m += `<p>`+ e +`</p>`
+  
+  var detail interface{}
+  if v, ok := content.(ErrorDetail); ok {
+    detail = v.ErrorDetail()
+  }
+  
+  v := reflect.ValueOf(detail)
+  if !v.IsNil() {
+    if v.Kind() == reflect.Map {
+      m += `<table>`
+      for _, e := range v.MapKeys() {
+        x := v.MapIndex(e)
+        m += `<tr>`
+        m += fmt.Sprintf(`  <td><strong>%s</strong></td>`, html.EscapeString(fmt.Sprintf("%v", e.Interface())))
+        m += fmt.Sprintf(`  <td>%s</td>`, html.EscapeString(fmt.Sprintf("%v", x.Interface())))
+        m += `</tr>`
+      }
+      m += `</table>`
+    }else if v.Kind() == reflect.Slice {
+      m += `<table>`
+      for i := 0; i < v.Len(); i++ {
+        x := v.Index(i).Interface()
+        if f, ok := x.(FieldError); ok {
+          m += `<tr>`
+          m += fmt.Sprintf(`  <td><strong><code>%v</code></strong></td>`, html.EscapeString(f.ErrorField()))
+          m += fmt.Sprintf(`  <td>%v</td>`, html.EscapeString(f.ErrorMessage()))
+          m += `</tr>`
+        }else{
+          m += `<tr>`
+          m += fmt.Sprintf(`  <td>%v</td>`, x)
+          m += `</tr>`
+        }
+      }
+      m += `</table>`
+    }
+  }
+  
   m += `</body></html>`
   
   return NewBytesEntity("text/html", []byte(m))
