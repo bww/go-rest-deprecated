@@ -8,13 +8,16 @@ import (
   "regexp"
   "reflect"
   "strings"
+  "strconv"
   "net/http"
+  "encoding/json"
 )
 
 import (
   "golang.org/x/net/html"
   "github.com/gorilla/mux"
   "github.com/bww/go-alert"
+  "github.com/bww/go-util/text"
 )
 
 // Internal service options
@@ -263,7 +266,10 @@ func (s *Service) sendError(rsp http.ResponseWriter, req *Request, err error) {
       r = v.Status
       h = v.Headers
       c = v.Cause
-      m = fmt.Sprintf("%s: [%v] %v", s.name, req.Id, v.Cause)
+      m = fmt.Sprintf("%s: [%v] %v", s.name, req.Id, c)
+      if d := formatDetail(c); d != "" {
+        m += "\n"+ d
+      }
     default:
       r = http.StatusInternalServerError
       c = basicError{http.StatusInternalServerError, err.Error()}
@@ -327,7 +333,7 @@ func htmlError(status int, headers map[string]string, content error) Entity {
   }
   
   v := reflect.ValueOf(detail)
-  if !v.IsNil() {
+  if v.IsValid() && !v.IsNil() {
     if v.Kind() == reflect.Map {
       m += `<table>`
       for _, e := range v.MapKeys() {
@@ -360,4 +366,61 @@ func htmlError(status int, headers map[string]string, content error) Entity {
   m += `</body></html>`
   
   return NewBytesEntity("text/html", []byte(m))
+}
+
+func formatDetail(c interface{}) string {
+  var s string
+  var detail interface{}
+  if v, ok := c.(ErrorDetail); ok {
+    detail = v.ErrorDetail()
+    v := reflect.ValueOf(detail)
+    if v.IsValid() && !v.IsNil() {
+      if v.Kind() == reflect.Map {
+        for _, e := range v.MapKeys() {
+          x := v.MapIndex(e)
+          s += fmt.Sprintf("  - %s: %s\n", text.Stringer(e), formatValue(x))
+        }
+      }else if v.Kind() == reflect.Slice {
+        for i := 0; i < v.Len(); i++ {
+          x := v.Index(i)
+          s += fmt.Sprintf("  - %s\n", formatValue(x))
+        }
+      }
+    }
+  }
+  return s
+}
+
+func formatValue(v reflect.Value) string {
+  if v.IsValid() && !v.IsNil() {
+    v := v.Interface()
+    switch c := v.(type) {
+      case string:
+        return c
+      case bool:
+        return strconv.FormatBool(c)
+      case rune: // is really int32
+        return string(c)
+      case int:
+        return strconv.FormatInt(int64(c), 10)
+      case int8:
+        return strconv.FormatInt(int64(c), 10)
+      case int16:
+        return strconv.FormatInt(int64(c), 10)
+      case int64:
+        return strconv.FormatInt(int64(c), 10)
+      case uint8:
+        return strconv.FormatUint(uint64(c), 10)
+      case uint16:
+        return strconv.FormatUint(uint64(c), 10)
+      case uint32:
+        return strconv.FormatUint(uint64(c), 10)
+      case uint64:
+        return strconv.FormatUint(uint64(c), 10)
+      default:
+        d, _ := json.MarshalIndent(v, "", "  ")
+        return text.IndentWithOptions(string(d), "    ", 0)
+    }
+  }
+  return ""
 }
